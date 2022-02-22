@@ -7,7 +7,7 @@ This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute
 
 Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Cmd+Shift+Enter*. 
 ```{r}
-install.packages(c("ggplot2", "ggpubr", "tidyverse", "broom", "AICcmodavg"))
+install.packages(c("ggplot2", "ggpubr", "tidyverse", "broom", "AICcmodavg", "apaTables", "devtools", "rstatix"))
 ```
 ```{r}
 library(ggplot2)
@@ -15,14 +15,15 @@ library(ggpubr)
 library(tidyverse)
 library(broom)
 library(AICcmodavg)
-```
-```{r}
-
+library(survival)
+library(apaTables)
+library(devtools)
+library(rstatix)
 ```
 
 ```{r}
 print(getwd())
-data <- read.csv(file = './data/rqa_results-1.csv')
+data <- read.csv(file = './data/rqa_results-4.csv')
 head(data)
 ```
 ```{r}
@@ -47,25 +48,44 @@ print(summary(one.way))
 print(data[, c('recurrence_rate')])
 ```
 ```{r}
-pairwise.t.test(data[, c('time')], data[, c('diversity')], p.adj = "none")
+pairwise.t.test(data[, c('divergence')], data[, c('diversity')], p.adj = "none")
 ```
 ```{r}
-for (val in list('entropy', 'longest_diagonal_line', 'time')){
+for (val in list('entropy', 'longest_diagonal_line', 'average_diagonal_line', 'no_messages', 'time', 'divergence', 'revise_score')){
   print(val)
   y = data[, c(val)]
   x = data[, c('diversity')]
-  print(pairwise.t.test(y, x, p.adj = "none"))
+  print(summary(res <- aov(y ~ factor(x), data = data)))
+  print(pairwise.t.test(y, x, p.adj = "bonferroni"))
+  plot(x, y, col = "blue", main = paste(val, "plotted against diversity", sep=" "), xlab = "diversity", ylab = val)
+  abline(lm(y ~ x))
+```
+
+
+```{r}
+for (val in list('recurrence_rate', 'longest_diagonal_line', 'divergence', 'time', 'determinism', 'laminarity', 'entropy', 'revise_score', 'average_diagonal_line', 'no_messages')){
+  print(val)
+  y = data[, c(val)]
+  x = data[, c('diversity')]
+  print(res <- kruskal.test(y ~ factor(x), data = data))
+  print(pairwise.wilcox.test(y, factor(x),
+                 p.adjust.method = "BH", correct=FALSE))
   plot(x, y, col = "blue", main = paste(val, "plotted against diversity", sep=" "), xlab = "diversity", ylab = val)
   abline(lm(y ~ x))
 }
 ```
+
+
+```{r}
+data %>% kruskal_effsize(no_messages ~ diversity)
+```
 ```{r}
 for (val in list('recurrence_rate', 'longest_diagonal_line', 'divergence', 'time')){
   print(val)
   y = data[, c(val)]
   x = data[, c('high_performance')]
   print(pairwise.t.test(y, x, p.adj = "none"))
-  plot(x, y, col = "blue", main = paste(val, "plotted against performance", sep=" "), xlab = "diversity", ylab = val)
+  plot(x, y, col = "blue", main = paste(val, "plotted against performance", sep=" "), xlab = "performance", ylab = val)
   abline(lm(y ~ x))
 }
 ```
@@ -77,7 +97,44 @@ for (val in list('recurrence_rate', 'longest_diagonal_line', 'divergence', 'time
   print(pairwise.t.test(y, x, p.adj = "none"))
   plot(x, y, col = "blue", main = paste(val, "plotted against performance", sep=" "), xlab = "diversity", ylab = val)
   abline(lm(y ~ x))
+```
+
+
+```{r}
+# Install devtools package if necessary
+if(!"devtools" %in% rownames(installed.packages())) install.packages("devtools")
+
+# Install the stable development verions from GitHub
+devtools::install_github("crsh/papaja")
+
+# Install the latest development snapshot from GitHub
+devtools::install_github("crsh/papaja@devel")
+```
+
+
+```{r}
+for (val in list('recurrence_rate', 'longest_diagonal_line', 'divergence', 'time', 'determinism', 'laminarity', 'entropy', 'revise_score', 'average_diagonal_line', 'no_messages')){
+  library(apaTables)
+  anova_out <- aov(data[, c(val)] ~ factor(diversity), data = data)
+  apa.aov.table(anova_out, filename = paste(val, "table.doc", sep=" "), table.number = 4)
 }
+```
+```{r}
+tukey.test <- TukeyHSD(anova_out)
+tukey.test
+```
+```{r}
+tapply(data$entropy, data$diversity, summary)
+```
+
+```
+
+
+```{r}
+clogit(high_performance ~ diversity + strata(task), data = data)
+```
+```{r}
+t.test(data[, c('determinism')], data[, c('recurrence_rate')], p.adj = "none")
 ```
 
 Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Cmd+Option+I*.
