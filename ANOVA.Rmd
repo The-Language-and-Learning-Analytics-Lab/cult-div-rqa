@@ -23,42 +23,8 @@ library(rstatix)
 
 ```{r}
 print(getwd())
-data <- read.csv(file = './data/rqa_results-4.csv')
+data <- read.csv(file = './data/rqa_results.csv')
 head(data)
-```
-```{r}
-summary(data)
-```
-```{r}
-one.way <- aov(recurrence_rate ~ high_performance, data = data)
-
-summary(one.way)
-```
-```{r}
-for (val in colnames(data))
-{
-print(val)
-one.way <- aov(data[, c(val)] ~ high_performance, data = data)
-
-print(summary(one.way))
-}
-
-```
-```{r}
-print(data[, c('recurrence_rate')])
-```
-```{r}
-pairwise.t.test(data[, c('divergence')], data[, c('diversity')], p.adj = "none")
-```
-```{r}
-for (val in list('entropy', 'longest_diagonal_line', 'average_diagonal_line', 'no_messages', 'time', 'divergence', 'revise_score')){
-  print(val)
-  y = data[, c(val)]
-  x = data[, c('diversity')]
-  print(summary(res <- aov(y ~ factor(x), data = data)))
-  print(pairwise.t.test(y, x, p.adj = "bonferroni"))
-  plot(x, y, col = "blue", main = paste(val, "plotted against diversity", sep=" "), xlab = "diversity", ylab = val)
-  abline(lm(y ~ x))
 ```
 
 
@@ -79,63 +45,7 @@ for (val in list('recurrence_rate', 'longest_diagonal_line', 'divergence', 'time
 ```{r}
 data %>% kruskal_effsize(no_messages ~ diversity)
 ```
-```{r}
-for (val in list('recurrence_rate', 'longest_diagonal_line', 'divergence', 'time')){
-  print(val)
-  y = data[, c(val)]
-  x = data[, c('high_performance')]
-  print(pairwise.t.test(y, x, p.adj = "none"))
-  plot(x, y, col = "blue", main = paste(val, "plotted against performance", sep=" "), xlab = "performance", ylab = val)
-  abline(lm(y ~ x))
-}
-```
-```{r}
-for (val in list('recurrence_rate', 'longest_diagonal_line', 'divergence', 'time')){
-  print(val)
-  y = data[, c(val)]
-  x = data[, c('high_performance')]
-  print(pairwise.t.test(y, x, p.adj = "none"))
-  plot(x, y, col = "blue", main = paste(val, "plotted against performance", sep=" "), xlab = "diversity", ylab = val)
-  abline(lm(y ~ x))
-```
 
-
-```{r}
-# Install devtools package if necessary
-if(!"devtools" %in% rownames(installed.packages())) install.packages("devtools")
-
-# Install the stable development verions from GitHub
-devtools::install_github("crsh/papaja")
-
-# Install the latest development snapshot from GitHub
-devtools::install_github("crsh/papaja@devel")
-```
-
-
-```{r}
-for (val in list('recurrence_rate', 'longest_diagonal_line', 'divergence', 'time', 'determinism', 'laminarity', 'entropy', 'revise_score', 'average_diagonal_line', 'no_messages')){
-  library(apaTables)
-  anova_out <- aov(data[, c(val)] ~ factor(diversity), data = data)
-  apa.aov.table(anova_out, filename = paste(val, "table.doc", sep=" "), table.number = 4)
-}
-```
-```{r}
-tukey.test <- TukeyHSD(anova_out)
-tukey.test
-```
-```{r}
-tapply(data$entropy, data$diversity, summary)
-```
-
-```
-
-
-```{r}
-clogit(high_performance ~ diversity + strata(task), data = data)
-```
-```{r}
-t.test(data[, c('determinism')], data[, c('recurrence_rate')], p.adj = "none")
-```
 
 Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Cmd+Option+I*.
 
